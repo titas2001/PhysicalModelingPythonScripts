@@ -19,22 +19,23 @@ from pylab import *
 from drawnow import figure, drawnow
 plt.close('all')
 import scipy
-from scipy import interpolate
+from scipy import interpolate, signal
 
 
 EXCITER = 0 # set 0 for flow, 1 for pressure
 
+
 #%%  Definitions
 
-fs = 44100.
+fs = 44100              # sampling rate
 k = 1./fs
-B = 142000.              # bulk modulus of the air
+B = 142000.             # bulk modulus of the air
 rho = 1.225             # air density
 c = math.sqrt(B/rho) 
 h = c*k                 # calculate grid spacing
-L = 1                   # scaling lenght
+L = 1.                  # scaling lenght
 gamma = c/L             # scaling
-durration = 1.           # synthesised sound lenght in s
+durration = 1.          # synthesised sound lenght in s
 dur = int(math.floor(fs*durration))
 
 N = math.floor(1/h) 
@@ -53,25 +54,33 @@ PsiPrev = np.zeros(N)
 out = np.zeros(dur) 
 
 # Create mock shape function
-shapeSampled = np.ones(10)
+# random shape of a vocal tract, just to check shape function, later will be replaced with a shape of an instrument
+shapeSampled = 0.001*np.array([34, 20, 12, 14, 16, 20, 26, 30, 34, 38, 34, 30, 26, 32]) 
+# shapeSampled = np.linspace(1,1.1,20) 
+# shapeSampled = np.ones(20)
  
 # Interpolate shape function to match the tube in array length
 
 M = len(shapeSampled)
-x = np.arange(0,M,1) 
-f = interpolate.interp1d(x, shapeSampled)
+x = np.linspace(0.01,0.1,M) 
+# f = interpolate.interp1d(x, shapeSampled)
 
-xnew = np.arange(0, 1, h)
-S = f(xnew) # shape function is from now just "S"
+xnew = np.linspace(0.01,0.1,N)
+# S = f(xnew) # shape function is from now just "S"
+#%%
+
+S = np.interp(xnew,x,shapeSampled)
+
+
 #%%
 
 avgS = np.zeros(N)
 
 i=0
 for i in range(N-1):
-    avgS[i] = (S[i+1]+S[i-1])/2
-avgS[0] = S[0] # just made them to work, its not correct though
-avgS[N-1] = S[N-1] # just made them to work, its not correct though
+    avgS[i] = (S[i+1]+2*S[i]+S[i-1])/4
+avgS[0] = S[0].copy()
+avgS[N-1] = S[N-1].copy() 
 
 a1 = 1/(2*(0.8216**2) * gamma)  # page 253 bilbao
 a2 = L/(0.8216 * math.sqrt(avgS[0]*S[0]/math.pi))
@@ -81,21 +90,24 @@ exciterV = np.zeros(dur)
 # exciter[0] = 1 
 f0 = 200 
 # t = np.linspace(0.,dur/(f0/200.))
-t = 0
-
-    
-for t in range(int(dur/(f0/10))):
-    exciterV[t] =  math.cos(2*math.pi*f0*(t/fs))
 
 
-def draw_fig():
-    plt.ylim(-0.5,0.5)
-    plt.plot(PsiNext)
-    
+
+
+
+maximus = 0
 #%% Flow input  
+
+    
 if EXCITER==0:
+    flowVec = PsiNext.copy()
+    def draw_fig():
+        plt.ylim(-15,15)
+        plt.plot(flowVec)
+        
     print("flow")
-    for t in range(int(dur/(f0/10))):
+    t = 0
+    for t in range(int(dur/(f0/f0))):
         exciterV[t] =  math.cos(2*math.pi*f0*(t/fs))# input is a cos wave
         
     n = 0
@@ -104,8 +116,8 @@ if EXCITER==0:
         l=1
         for l in range(N-1):    
             PsiNext[l] = 2*(1-lambdaSq)*Psi[l] - PsiPrev[l] + \
-                lambdaSq * (S[l+1]/avgS[l]) * Psi[l+1] + \
-                lambdaSq * (S[l]/avgS[l]) * Psi[l-1]
+                lambdaSq * 0.5*((S[l+1]+S[l])/avgS[l]) * Psi[l+1] + \
+                lambdaSq * 0.5*((S[l-1]+S[l])/avgS[l]) * Psi[l-1]
                 
               
         # flow as an input
@@ -114,23 +126,36 @@ if EXCITER==0:
         num = 2*(1-lambdaSq)*Psi[N-1] - PsiPrev[N-1] + (h*((a1/k) - a2)*(lambdaSq*S[N-1])/avgS[N-1])*PsiPrev[N-1] + 2*lambdaSq*Psi[N-2]  
         den = 1 + h*((a1/k) + a2)*(lambdaSq*S[N-1]/avgS[N-1]) 
         PsiNext[N-1] = num/den 
+        
+        # ##Plot the flow in the tube
+        # i = 0
+        # for i in range(N-1):
+        #     flowVec[i] = (Psi[i+1].copy() - Psi[i].copy())/(h)
             
-    
+        # flowVec[N-1] = (Psi[N-1].copy() - Psi[N-2].copy())/(h)
+            
         # drawnow(draw_fig)
+        
         
         # out[n] = PsiNext[N-1]
         
         # output as flow
         out[n] = (Psi[N-3] + Psi[N-1])/(2*h)
         
-        PsiPrev  = Psi.copy() 
-        Psi = PsiNext.copy()   
+        PsiPrev  = Psi.copy() # .copy() prevents from setting Psi = PsiPrev
+        Psi = PsiNext.copy()  # .copy() prevents from setting PsiNext = Psi
 
  
 #%% Pressure input
 if EXCITER==1:
+    pressureVec = PsiNext.copy()
+    def draw_fig():
+        plt.ylim(-3200,3200)
+        plt.plot(pressureVec)
+    
     print("pressure")
-    for t in range(int(dur/(f0/10))):
+    t = 0
+    for t in range(int(dur/(f0/f0))):
         exciterP[t] = 2000 * math.cos(2*math.pi*f0*(t/fs)) # input is a cos wave
         
     n = 0    
@@ -140,8 +165,8 @@ if EXCITER==1:
         l=1
         for l in range(N-1):    
             PsiNext[l] = 2*(1-lambdaSq)*Psi[l] - PsiPrev[l] + \
-                lambdaSq * (S[l+1]/avgS[l]) * Psi[l+1] + \
-                lambdaSq * (S[l]/avgS[l]) * Psi[l-1]
+                lambdaSq * 0.5*((S[l+1]+S[l])/avgS[l]) * Psi[l+1] + \
+                lambdaSq * 0.5*((S[l-1]+S[l])/avgS[l]) * Psi[l-1]
                 
               
             
@@ -152,8 +177,13 @@ if EXCITER==1:
         den = 1 + h*((a1/k) + a2)*(lambdaSq*S[N-1]/avgS[N-1]) 
         PsiNext[N-1] = num/den 
             
-    
+        # ##Plot the pressure in the tube
+        i = 0
+        for i in range(N):
+            pressureVec[i] = (PsiNext[i] - PsiPrev[i])/(2*k)
+             
         # drawnow(draw_fig)
+        
         
         # out[n] = PsiNext[N-1]
         
@@ -161,14 +191,14 @@ if EXCITER==1:
         out[n] = rho*(PsiNext[N-1]-PsiPrev[N-1])/(2*k)
         
         
-        PsiPrev  = Psi.copy() 
-        Psi = PsiNext.copy()   
+        PsiPrev  = Psi.copy() # .copy() prevents from setting Psi = PsiPrev
+        Psi = PsiNext.copy()  # .copy() prevents from setting PsiNext = Psi
     
 
 #%% Plot
 
 # plt.plot(exciter)
-
+    
 plt.plot(out)
 
 #%% Save array as an audio file
