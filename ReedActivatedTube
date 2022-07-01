@@ -1,0 +1,164 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Jun 30 14:04:05 2022
+
+@author: titas
+"""
+
+from IPython import get_ipython  # same as clear in matlab
+get_ipython().magic('reset -sf') # same as clear in matlab
+
+from IPython.display import set_matplotlib_formats
+set_matplotlib_formats('svg')
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+# %matplotlib qt  # makes plots in a separate window
+import math
+from pylab import *
+from drawnow import figure, drawnow
+plt.close('all')
+import scipy
+from scipy import interpolate
+
+
+EXCITER = 0 # set 0 for flow, 1 for pressure
+
+#%%  Definitions
+
+fs = 44100.
+deltaT = 1./fs
+B = 142000.              # bulk modulus of the air
+rho = 1.225             # air density
+c = math.sqrt(B/rho) 
+deltaX = c*deltaT                 # calculate grid spacing
+L = 1                   # scaling lenght
+gamma = c/L             # scaling
+durration = 1.           # synthesised sound lenght in s
+dur = int(math.floor(fs*durration))
+
+N = math.floor(1/deltaX) 
+deltaX = 1/N 
+lambdaSq = c**2 * deltaT**2 / deltaX**2  #sanity check
+# lambda = gamma * deltaT /deltaX 
+
+# intialise states of the system
+
+PsiNext = np.zeros(N) 
+Psi = np.zeros(N) 
+PsiPrev = np.zeros(N) 
+
+
+# initialise output
+out = np.zeros(dur) 
+
+# Create mock shape function
+shapeSampled = np.ones(10)
+ 
+# Interpolate shape function to match the tube in array length
+
+M = len(shapeSampled)
+x = np.arange(0,M,1) 
+f = interpolate.interp1d(x, shapeSampled)
+
+xnew = np.arange(0, 1, deltaX)
+S = f(xnew) # shape function is from now just "S"
+#%%
+
+avgS = np.zeros(N)
+
+i=0
+for i in range(N-1):
+    avgS[i] = (S[i+1]+S[i-1])/2
+avgS[0] = S[0] # just made them to work, its not correct though
+avgS[N-1] = S[N-1] # just made them to work, its not correct though
+
+a1 = 1/(2*(0.8216**2) * gamma)  # page 253 bilbao
+a2 = L/(0.8216 * math.sqrt(avgS[0]*S[0]/math.pi))
+
+exciterV = np.zeros(dur)
+# exciter[0] = 1 
+f0 = 200 
+# t = np.linspace(0.,dur/(f0/200.))
+t = 0
+
+def draw_fig():
+    plt.ylim(-0.5,0.5)
+    plt.plot(PsiNext)
+    
+#%% Reed model input 
+print("reed model 2012")
+for t in range(int(dur/(f0/10))):
+    exciterV[t] =  math.cos(2*math.pi*f0*(t/fs))# input is a cos wave
+    
+n = 0
+# Loop for flow input
+for n in range(dur):
+    l=1
+    for l in range(N-1):    
+        PsiNext[l] = 2*(1-lambdaSq)*Psi[l] - PsiPrev[l] + \
+            lambdaSq * (S[l+1]/avgS[l]) * Psi[l+1] + \
+            lambdaSq * (S[l]/avgS[l]) * Psi[l-1]
+            
+
+
+    # need Pb and Pin, y, yc, h, g, A
+    # calculate update for reed mass spring (yNext)
+    if y>yc:
+        ydiff = y - yc
+    else:
+        ydiff = 0
+        
+    yNext = (deltaT*g - 2)/(2+deltaT*g)*yPrev + ((4 - (2*k*deltaT**2)/m)/(2+deltaT*g))*y - \
+        ((2*k*deltaT**2)/m)/(2+deltaT*g)*ydiff + (((2*deltaT**2)/2)/(2+deltaT*g))*Pb-Pin
+        
+    
+    
+    
+    # calculate update for PsiNext[0] 
+    Ur = A * ((y - yPrev)/deltaT)
+    Gamma = ((b*h)**2)/deltaT * ((2*h)/A * Ur + 4*PsiNext[1] - PsiNext[2] - 4*Psi[0] + PsiPrev[0]) - (2*(b*h)**2)/rho * Pb
+    Lambda = (b**2 * h**3)/(deltaT * A)
+    
+    if Gamma>0:
+        Uf = Lambda - math.sqrt(Lambda**2 + Gamma)
+    else :
+        Uf = - Lambda + math.sqrt(Lambda**2 - Gamma)
+        
+        
+    PsiNext[0] = (2*h)/(3*A) * (Ur+Uf) + (4/3)*PsiNext[1] - (1/3)*PsiNext[1]
+    
+    
+    # Calculate the radiating boundary
+    num = 2*(1-lambdaSq)*Psi[N-1] - PsiPrev[N-1] + (deltaX*((a1/deltaT) - a2)*(lambdaSq*S[N-1])/avgS[N-1])*PsiPrev[N-1] + 2*lambdaSq*Psi[N-2]  
+    den = 1 + deltaX*((a1/deltaT) + a2)*(lambdaSq*S[N-1]/avgS[N-1]) 
+    PsiNext[N-1] = num/den 
+        
+
+    # drawnow(draw_fig)
+    
+    # out[n] = PsiNext[N-1]
+    
+    # output as flow
+    out[n] = (Psi[N-3] + Psi[N-1])/(2*deltaX)
+    
+    
+    yPrev = y.copy()
+    y = yNext.copy()
+    
+    PsiPrev  = Psi.copy() 
+    Psi = PsiNext.copy()   
+
+#%% Plot
+
+# plt.plot(exciter)
+
+plt.plot(out)
+
+#%% Save array as an audio file
+from scipy.io.wavfile import write
+
+scaled = np.int16(out/np.max(np.abs(out)) * 32767)
+write('test.wav', int(fs), scaled)
