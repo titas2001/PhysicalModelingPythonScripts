@@ -90,7 +90,7 @@ avgS[N-1] = S[N-1] # just made them to work, its not correct though
 a1 = 1/(2*(0.8216**2) * gamma)  # page 253 bilbao
 a2 = L/(0.8216 * math.sqrt(avgS[0]*S[0]/math.pi))
 
-Pin = np.zeros(dur)
+Pin = 0
 # exciter[0] = 1 
 f0 = 200 
 # t = np.linspace(0.,dur/(f0/200.))
@@ -102,8 +102,7 @@ def draw_fig():
     
 #%% Reed model input 
 print("reed model 2012")
-for t in range(int(dur/(f0/10))):
-    Pin[t] =  math.cos(2*math.pi*f0*(t/fs))# input is a cos wave
+
     
 n = 0
 # Loop for flow input
@@ -124,7 +123,7 @@ for n in range(dur):
         ydiff = 0
         
     yNext = (deltaT*g - 2)/(2+deltaT*g)*yPrev + ((4 - (2*k*deltaT**2)/m)/(2+deltaT*g))*y - \
-        ((2*k*deltaT**2)/m)/(2+deltaT*g)*ydiff + (((2*deltaT**2)/2)/(2+deltaT*g))*Pb-Pin[n]
+        ((2*k*deltaT**2)/m)/(2+deltaT*g)*ydiff + (((2*deltaT**2)/2)/(2+deltaT*g))*Pb-Pin
         
     
     
@@ -154,9 +153,13 @@ for n in range(dur):
     
     # out[n] = PsiNext[N-1]
     
-    # output as flow
-    out[n] = (Psi[N-3] + Psi[N-1])/(2*deltaX)
+    # output as pressure
     
+    Pin = rho*((3*PsiNext[0] - 4*Psi[0] + PsiPrev[0])/(2*deltaT))
+    
+    out[n] = Pin
+    
+
     
     yPrev = y
     y = yNext
