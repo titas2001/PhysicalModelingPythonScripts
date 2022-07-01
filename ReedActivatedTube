@@ -50,7 +50,19 @@ PsiNext = np.zeros(N)
 Psi = np.zeros(N) 
 PsiPrev = np.zeros(N) 
 
+yNext = 0.0
+y = 0.0
+yPrev = 0.0
 
+Pb=2000.0
+ym = 4e-04
+yc = 0.6*ym
+g = 3000 
+A = 7.62e-05
+b = 0.013 
+k = 8.66e06
+m = 0.05
+alpha = 1
 # initialise output
 out = np.zeros(dur) 
 
@@ -78,7 +90,7 @@ avgS[N-1] = S[N-1] # just made them to work, its not correct though
 a1 = 1/(2*(0.8216**2) * gamma)  # page 253 bilbao
 a2 = L/(0.8216 * math.sqrt(avgS[0]*S[0]/math.pi))
 
-exciterV = np.zeros(dur)
+Pin = np.zeros(dur)
 # exciter[0] = 1 
 f0 = 200 
 # t = np.linspace(0.,dur/(f0/200.))
@@ -91,7 +103,7 @@ def draw_fig():
 #%% Reed model input 
 print("reed model 2012")
 for t in range(int(dur/(f0/10))):
-    exciterV[t] =  math.cos(2*math.pi*f0*(t/fs))# input is a cos wave
+    Pin[t] =  math.cos(2*math.pi*f0*(t/fs))# input is a cos wave
     
 n = 0
 # Loop for flow input
@@ -104,20 +116,21 @@ for n in range(dur):
             
 
 
-    # need Pb and Pin, y, yc, h, g, A
+    # need Pb=2000 and Pin, yc, h, g = 3000, A = 7.62e-5, b = 0.013 ym = 4*e-4
     # calculate update for reed mass spring (yNext)
     if y>yc:
-        ydiff = y - yc
+        ydiff = (y - yc)**alpha
     else:
         ydiff = 0
         
     yNext = (deltaT*g - 2)/(2+deltaT*g)*yPrev + ((4 - (2*k*deltaT**2)/m)/(2+deltaT*g))*y - \
-        ((2*k*deltaT**2)/m)/(2+deltaT*g)*ydiff + (((2*deltaT**2)/2)/(2+deltaT*g))*Pb-Pin
+        ((2*k*deltaT**2)/m)/(2+deltaT*g)*ydiff + (((2*deltaT**2)/2)/(2+deltaT*g))*Pb-Pin[n]
         
     
     
     
     # calculate update for PsiNext[0] 
+    h = ym - yNext
     Ur = A * ((y - yPrev)/deltaT)
     Gamma = ((b*h)**2)/deltaT * ((2*h)/A * Ur + 4*PsiNext[1] - PsiNext[2] - 4*Psi[0] + PsiPrev[0]) - (2*(b*h)**2)/rho * Pb
     Lambda = (b**2 * h**3)/(deltaT * A)
@@ -145,8 +158,8 @@ for n in range(dur):
     out[n] = (Psi[N-3] + Psi[N-1])/(2*deltaX)
     
     
-    yPrev = y.copy()
-    y = yNext.copy()
+    yPrev = y
+    y = yNext
     
     PsiPrev  = Psi.copy() 
     Psi = PsiNext.copy()   
