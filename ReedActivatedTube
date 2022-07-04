@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Jun 30 14:04:05 2022
+# """
+# Created on Thu Jun 30 14:04:05 2022
 
-@author: titas
-"""
+# @author: titas
+# """
 
 from IPython import get_ipython  # same as clear in matlab
 get_ipython().magic('reset -sf') # same as clear in matlab
@@ -73,20 +73,20 @@ Lbore = 0.4126
 S0 = pi*rleft**2;       # surface area (left end)
 
 shapeSampled = np.array([[0, pi*(0.011/2)**2], [0.03155, pi*(0.011/2)**2], [0.03165, pi*(0.0127/2)**2], [0.0826, pi*(0.015/2)**2], [Lbore, pi*(0.015/2)**2]])
-x = shapeSampled[:,0]
-y = shapeSampled[:,1]
+xS = shapeSampled[:,0]
+yS = shapeSampled[:,1]
 minDiff = 1
-for i in range(len(x)-1):
-    if minDiff > x[i+1] - x[i]:
-        minDiff = x[i+1] - x[i]
+for i in range(len(xS)-1):
+    if minDiff > xS[i+1] - xS[i]:
+        minDiff = xS[i+1] - xS[i]
         
-newX = np.arange(x[0],x[-1],minDiff)
+newX = np.arange(xS[0],xS[-1],minDiff)
 
 # Interpolate shape function to match the tube in array length
 
 M = len(shapeSampled)
-# x = np.arange(0,M,1) 
-f = interpolate.interp1d(x, y)
+
+f = interpolate.interp1d(xS, yS)
 
 xnew = np.arange(0, 1, deltaX)
 shapeOf = f(newX) # shape function is from now just "S"
@@ -119,7 +119,7 @@ def draw_fig():
 #%% Reed model input 
 print("reed model 2012")
 
-    
+gammaArray = np.zeros(dur)
 n = 0
 # Loop for flow input
 for n in range(dur):
@@ -128,7 +128,6 @@ for n in range(dur):
         PsiNext[l] = 2*(1-lambdaSq)*Psi[l] - PsiPrev[l] + \
             lambdaSq * (S[l+1]/avgS[l]) * Psi[l+1] + \
             lambdaSq * (S[l]/avgS[l]) * Psi[l-1]
-            
 
 
     # need Pb=2000 and Pin, yc, h, g = 3000, A = 7.62e-5, b = 0.013 ym = 4*e-4
@@ -138,8 +137,8 @@ for n in range(dur):
     else:
         ydiff = 0
         
-    yNext = (deltaT*g - 2)/(2+deltaT*g)*yPrev + ((4 - (2*k*deltaT**2)/m)/(2+deltaT*g))*y - \
-        ((2*kc*deltaT**2)/m)/(2+deltaT*g)*ydiff + (((2*deltaT**2)/2)/(2+deltaT*g))*Pb-Pin
+    yNext = ((deltaT*g - 2)/(2+deltaT*g))*yPrev + ((4 - (2*k*deltaT**2)/m)/(2+deltaT*g))*y - \
+        (((2*kc*deltaT**2)/m)/(2+deltaT*g))*ydiff + (((2*deltaT**2)/2)/(2+deltaT*g))*(Pb-Pin)
         
     
     
@@ -147,16 +146,16 @@ for n in range(dur):
     # calculate update for PsiNext[0] 
     h = ym - yNext
     Ur = A * ((y - yPrev)/deltaT)
-    Gamma = (((b*h)**2)/deltaT) * (((2*deltaX)/A)*Ur + 4*PsiNext[1] - PsiNext[2] - 4*Psi[0] + PsiPrev[0]) - (2*(b*h)**2)/rho * Pb
+    Gamma = (((b*h)**2)/deltaT) * (((2*deltaX)/A)*Ur + 4*PsiNext[1] - PsiNext[2] - 4*Psi[0] + PsiPrev[0]) - ((2*(b*h)**2)/rho) * Pb
     Lambda = ((b*h)**2 * deltaX)/(deltaT * A)
-    
+    gammaArray[n] = Gamma
     if Gamma>0:
         Uf = Lambda - math.sqrt(Lambda**2 + Gamma)
     else :
-        Uf = - Lambda + math.sqrt(Lambda**2 - Gamma)
+        Uf = (-1) *  Lambda + math.sqrt(Lambda**2 - Gamma)
         
         
-    PsiNext[0] = (2*h)/(3*A) * (Ur+Uf) + (4/3)*PsiNext[1] - (1/3)*PsiNext[1]
+    PsiNext[0] = ((2*h)/(3*A)) * (Ur+Uf) + (4/3)*PsiNext[1] - (1/3)*PsiNext[1]
     
     
     # Calculate the radiating boundary
