@@ -23,7 +23,6 @@ plt.close('all')
 import scipy
 from scipy import interpolate
 
-
 EXCITER = 0 # set 0 for flow, 1 for pressure
 
 #%%  Definitions
@@ -61,27 +60,44 @@ g = 3000
 A = 7.62e-05
 b = 0.013 
 k = 8.66e06
+kc = 1
 m = 0.05
-alpha = 1
+alpha = 2
 # initialise output
 out = np.zeros(dur) 
 
 # Create mock shape function
-shapeSampled = np.ones(10)
- 
+#shapeSampled = 0.0001*np.ones(10)
+rleft = 0.0001
+Lbore = 0.4126 
+S0 = pi*rleft**2;       # surface area (left end)
+
+shapeSampled = np.array([[0, pi*(0.011/2)**2], [0.03155, pi*(0.011/2)**2], [0.03165, pi*(0.0127/2)**2], [0.0826, pi*(0.015/2)**2], [Lbore, pi*(0.015/2)**2]])
+x = shapeSampled[:,0]
+y = shapeSampled[:,1]
+minDiff = 1
+for i in range(len(x)-1):
+    if minDiff > x[i+1] - x[i]:
+        minDiff = x[i+1] - x[i]
+        
+newX = np.arange(x[0],x[-1],minDiff)
+
 # Interpolate shape function to match the tube in array length
 
 M = len(shapeSampled)
-x = np.arange(0,M,1) 
-f = interpolate.interp1d(x, shapeSampled)
+# x = np.arange(0,M,1) 
+f = interpolate.interp1d(x, y)
 
 xnew = np.arange(0, 1, deltaX)
-S = f(xnew) # shape function is from now just "S"
+shapeOf = f(newX) # shape function is from now just "S"
+interpolation = interpolate.interp1d(np.arange(len(shapeOf)), shapeOf, axis=0, fill_value='extrapolate')
+S = interpolation(np.linspace(0, len(shapeOf), N))
+
 #%%
 
 avgS = np.zeros(N)
 
-i=0
+
 for i in range(N-1):
     avgS[i] = (S[i+1]+S[i-1])/2
 avgS[0] = S[0] # just made them to work, its not correct though
@@ -123,7 +139,7 @@ for n in range(dur):
         ydiff = 0
         
     yNext = (deltaT*g - 2)/(2+deltaT*g)*yPrev + ((4 - (2*k*deltaT**2)/m)/(2+deltaT*g))*y - \
-        ((2*k*deltaT**2)/m)/(2+deltaT*g)*ydiff + (((2*deltaT**2)/2)/(2+deltaT*g))*Pb-Pin
+        ((2*kc*deltaT**2)/m)/(2+deltaT*g)*ydiff + (((2*deltaT**2)/2)/(2+deltaT*g))*Pb-Pin
         
     
     
@@ -131,8 +147,8 @@ for n in range(dur):
     # calculate update for PsiNext[0] 
     h = ym - yNext
     Ur = A * ((y - yPrev)/deltaT)
-    Gamma = ((b*h)**2)/deltaT * ((2*h)/A * Ur + 4*PsiNext[1] - PsiNext[2] - 4*Psi[0] + PsiPrev[0]) - (2*(b*h)**2)/rho * Pb
-    Lambda = (b**2 * h**3)/(deltaT * A)
+    Gamma = (((b*h)**2)/deltaT) * (((2*deltaX)/A)*Ur + 4*PsiNext[1] - PsiNext[2] - 4*Psi[0] + PsiPrev[0]) - (2*(b*h)**2)/rho * Pb
+    Lambda = ((b*h)**2 * deltaX)/(deltaT * A)
     
     if Gamma>0:
         Uf = Lambda - math.sqrt(Lambda**2 + Gamma)
@@ -147,7 +163,7 @@ for n in range(dur):
     num = 2*(1-lambdaSq)*Psi[N-1] - PsiPrev[N-1] + (deltaX*((a1/deltaT) - a2)*(lambdaSq*S[N-1])/avgS[N-1])*PsiPrev[N-1] + 2*lambdaSq*Psi[N-2]  
     den = 1 + deltaX*((a1/deltaT) + a2)*(lambdaSq*S[N-1]/avgS[N-1]) 
     PsiNext[N-1] = num/den 
-        
+    
 
     # drawnow(draw_fig)
     
