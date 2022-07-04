@@ -93,10 +93,9 @@ xnew = np.arange(0, 1, deltaX)
 shapeOf = f(newX) # shape function is from now just "S"
 interpolation = interpolate.interp1d(np.arange(len(shapeOf)), shapeOf, axis=0, fill_value='extrapolate')
 S = interpolation(np.linspace(0, len(shapeOf), N))
-K = 0.0001*ones(N)
+# S = 0.0001*ones(N)
 plt.figure(1)
 plot(S)
-plot(K)
 #%%
 
 avgS = np.zeros(N)
@@ -163,10 +162,10 @@ for n in range(dur):
     
     
     # Calculate the radiating boundary
-    num = 2*(1-lambdaSq)*Psi[N-1] - PsiPrev[N-1] + (deltaX*((a1/deltaT) - a2)*(lambdaSq*S[N-1])/avgS[N-1])*PsiPrev[N-1] + 2*lambdaSq*Psi[N-2]  
-    den = 1 + deltaX*((a1/deltaT) + a2)*(lambdaSq*S[N-1]/avgS[N-1]) 
-    PsiNext[N-1] = num/den 
-    
+    # num = 2*(1-lambdaSq)*Psi[N-1] - PsiPrev[N-1] + (deltaX*((a1/deltaT) - a2)*(lambdaSq*S[N-1])/avgS[N-1])*PsiPrev[N-1] + 2*lambdaSq*Psi[N-2]  
+    # den = 1 + deltaX*((a1/deltaT) + a2)*(lambdaSq*S[N-1]/avgS[N-1]) 
+    # PsiNext[N-1] = num/den 
+    PsiNext[N-1] = Psi[N-1]
 
     # drawnow(draw_fig)
     
