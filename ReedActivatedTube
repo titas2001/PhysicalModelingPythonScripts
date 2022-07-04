@@ -37,8 +37,8 @@ gamma = c/L             # scaling
 durration = 1.           # synthesised sound lenght in s
 dur = int(math.floor(fs*durration))
 
-N = math.floor(1/deltaX) 
-deltaX = 1/N 
+N = int(math.floor(1/deltaX))
+deltaX = 1.0/N 
 lambdaSq = c**2 * deltaT**2 / deltaX**2  #sanity check
 # lambda = gamma * deltaT /deltaX 
 
@@ -130,15 +130,14 @@ for n in range(dur):
             lambdaSq * (S[l]/avgS[l]) * Psi[l-1]
 
 
-    # need Pb=2000 and Pin, yc, h, g = 3000, A = 7.62e-5, b = 0.013 ym = 4*e-4
     # calculate update for reed mass spring (yNext)
     if y>yc:
         ydiff = (y - yc)**alpha
     else:
         ydiff = 0
         
-    yNext = ((deltaT*g - 2)/(2+deltaT*g))*yPrev + ((4 - (2*k*deltaT**2)/m)/(2+deltaT*g))*y - \
-        (((2*kc*deltaT**2)/m)/(2+deltaT*g))*ydiff + (((2*deltaT**2)/m)/(2+deltaT*g))*(Pb-Pin)
+    yNext = ((4 - (2*k*deltaT**2)/m)/(2+deltaT*g))*y + ((deltaT*g - 2)/(2 + deltaT*g))*yPrev - \
+        ((2*kc*deltaT**2)/(m*(2+deltaT*g)))*ydiff + ((2*deltaT**2)/(m*(2+deltaT*g)))*(Pb-Pin)
         
     
     
@@ -153,8 +152,7 @@ for n in range(dur):
         Uf = Lambda - math.sqrt(Lambda**2 + Gamma)
     else :
         Uf = (-1) *  Lambda + math.sqrt(Lambda**2 - Gamma)
-        
-        
+
     PsiNext[0] = ((2*deltaX)/(3*S[0])) * (Ur+Uf) + (4/3)*PsiNext[1] - (1/3)*PsiNext[1]
     
     
