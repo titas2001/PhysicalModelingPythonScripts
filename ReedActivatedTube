@@ -59,7 +59,7 @@ g = 3000
 A = 7.62e-05
 b = 0.013 
 k = 8.66e06
-kc = 1
+kc = 1e10
 m = 0.05
 alpha = 2
 # initialise output
@@ -96,8 +96,8 @@ plot(S)
 #%%
 
 avgS = np.zeros(N)
-
-
+i = 1
+print(i)
 for i in range(N-1):
     avgS[i] = (S[i+1]+S[i])/2
 avgS[0] = S[0] # just made them to work, its not correct though
