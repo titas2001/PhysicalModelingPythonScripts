@@ -67,6 +67,7 @@ out = np.zeros(dur)
 
 # Create mock shape function
 #shapeSampled = 0.0001*np.ones(10)
+rleft = 0.0001
 S0 = pi*rleft**2;       # surface area (left end)
 
 shapeSampled = np.array([[0, pi*(0.011/2)**2], [0.03155, pi*(0.011/2)**2], [0.03165, pi*(0.0127/2)**2], [0.0826, pi*(0.015/2)**2], [L, pi*(0.015/2)**2]])
@@ -88,8 +89,8 @@ f = interpolate.interp1d(xS, yS)
 xnew = np.arange(0, 1, deltaX)
 shapeOf = f(newX) # shape function is from now just "S"
 interpolation = interpolate.interp1d(np.arange(len(shapeOf)), shapeOf, axis=0, fill_value='extrapolate')
-# S = interpolation(np.linspace(0, len(shapeOf), N))
-S = 0.0002*ones(N)
+S = interpolation(np.linspace(0, len(shapeOf), N))
+# S = 0.0002*ones(N)
 plt.figure(1)
 plot(S)
 #%%
@@ -98,7 +99,7 @@ avgS = np.zeros(N)
 
 
 for i in range(N-1):
-    avgS[i] = (S[i+1]+S[i-1])/2
+    avgS[i] = (S[i+1]+S[i])/2
 avgS[0] = S[0] # just made them to work, its not correct though
 avgS[N-1] = S[N-1] # just made them to work, its not correct though
 
