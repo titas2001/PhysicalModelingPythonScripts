@@ -55,7 +55,7 @@ yPrev = 0.0
 Pb=2000.0
 ym = 4e-04
 yc = 0.6*ym
-g = 3000 
+d = 3000  # Damping
 A = 7.62e-05
 b = 0.013 
 k = 8.66e06
@@ -136,8 +136,8 @@ for n in range(dur):
     else:
         ydiff = 0
         
-    yNext = ((4 - (2*k*deltaT**2)/m)/(2+deltaT*g))*y + ((deltaT*g - 2)/(2 + deltaT*g))*yPrev - \
-        ((2*kc*deltaT**2)/(m*(2+deltaT*g)))*ydiff + ((2*deltaT**2)/(m*(2+deltaT*g)))*(Pb-Pin)
+    yNext = ((4 - (2*k*deltaT**2)/m)/(2+deltaT*d))*y + ((deltaT*d - 2)/(2 + deltaT*d))*yPrev - \
+        ((2*kc*deltaT**2)/(m*(2+deltaT*d)))*ydiff + ((2*deltaT**2)/(m*(2+deltaT*d)))*(Pb-Pin)
         
     
     
