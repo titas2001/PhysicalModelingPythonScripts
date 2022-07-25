@@ -52,20 +52,18 @@ yNext = 0.0
 y = 0.0
 yPrev = 0.0
 
-Pb=3637.0
-ym = 4e-04
-yc = 0.6*ym
-yeq =  4.09e-04
-d = 3000  # Damping
-df = 0.001    # Impact damping
-A = 7.62e-05
-A = 9.856e-05
-b = 0.013 
-b = 0.012
-k = 8.66e06
-kc = 1e10
-m = 0.05
-alpha = 2
+Pm=3637.0   # pressure at the mouthpiece
+yeq =  4.09e-04  # reed equilibrium position
+yc = 0.6*yeq
+
+d = 3000        # Damping per unit area
+df = 1          # Damping factor
+A = 9.856e-05   # Effective reed surface
+b = 0.012       # Effective reed width
+k = 8.66e06     # Reed stiffness
+kc = 1e10       # Power-law constant
+m = 0.05        # Reed mass
+alpha = 2       # Power-law constant
 # initialise output
 out = np.zeros(dur) 
 
@@ -140,9 +138,7 @@ for n in range(dur):
     else:
         ydiff = 0
         
-    # yNext = ((4 - (2*k*deltaT**2)/m)/(2+deltaT*d))*y + ((deltaT*d - 2)/(2 + deltaT*d))*yPrev - \
-    #     ((2*kc*deltaT**2)/(m*(2+deltaT*d)))*ydiff + ((2*deltaT**2)/(m*(2+deltaT*d)))*(Pb-Pin)
-    yNext = ((4*m - 2*(deltaT**2)*k)*y + ( deltaT*m*d - 2*m + deltaT*kc*df*ydiff)*yPrev - 2*(deltaT**2)*kc*ydiff + 2*(Pb-Pin)*A*deltaT**2)/(2*m + deltaT*m*d + deltaT*kc*df*ydiff)
+    yNext = ((4*m - 2*(deltaT**2)*k)*y + ( deltaT*m*d - 2*m + deltaT*kc*df*ydiff)*yPrev - 2*(deltaT**2)*kc*ydiff + 2*(Pm-Pin)*A*deltaT**2)/(2*m + deltaT*m*d + deltaT*kc*df*ydiff)
     
     
     
@@ -153,7 +149,7 @@ for n in range(dur):
         h = 0
     
     Ur = A * ((y - yPrev)/deltaT)
-    Gamma = (((b*h)**2)/deltaT) * (((2*deltaX)/S[0])*Ur + 4*PsiNext[1] - PsiNext[2] - 4*Psi[0] + PsiPrev[0]) - ((2*(b*h)**2)/rho) * Pb
+    Gamma = (((b*h)**2)/deltaT) * (((2*deltaX)/S[0])*Ur + 4*PsiNext[1] - PsiNext[2] - 4*Psi[0] + PsiPrev[0]) - ((2*(b*h)**2)/rho) * Pm
     Lambda = ((b*h)**2 * deltaX)/(deltaT * S[0])
     gammaArray[n] = Gamma
     if Gamma>0:
