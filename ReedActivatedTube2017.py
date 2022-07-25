@@ -143,8 +143,8 @@ for n in range(dur):
     
     
     # calculate update for PsiNext[0] 
-    if yeq>yNext:
-        h = yeq - yNext
+    if yc>yNext:
+        h = yc - yNext
     else:
         h = 0
     
