@@ -34,7 +34,7 @@ c = math.sqrt(B/rho)
 deltaX = c*deltaT                 # calculate grid spacing
 L = 0.4126              # scaling lenght
 gamma = c/L             # scaling
-durration = 3.           # synthesised sound lenght in s
+durration = 1.           # synthesised sound lenght in s
 dur = int(math.floor(fs*durration))
 
 N = int(math.floor(1/deltaX))
@@ -57,7 +57,7 @@ ym = 4e-04
 yc = 0.6*ym
 yeq =  4.09e-04
 d = 3000  # Damping
-df = 1    # Impact damping
+df = 0.001    # Impact damping
 A = 7.62e-05
 A = 9.856e-05
 b = 0.013 
@@ -121,7 +121,7 @@ def draw_fig():
     plt.plot(PsiNext)
     
 #%% Reed model input 
-print("reed model 2012")
+print("reed model 2017")
 
 gammaArray = np.zeros(dur)
 n = 0
