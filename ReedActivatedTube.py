@@ -116,7 +116,7 @@ def draw_fig():
     plt.ylim(-0.5,0.5)
     plt.plot(PsiNext)
     
-#%% Reed model input 
+#%% Reed model 2012 
 print("reed model 2012")
 
 gammaArray = np.zeros(dur)
@@ -136,8 +136,7 @@ for n in range(dur):
     else:
         ydiff = 0
         
-    yNext = ((4 - (2*k*deltaT**2)/m)/(2+deltaT*d))*y + ((deltaT*d - 2)/(2 + deltaT*d))*yPrev - \
-        ((2*kc*deltaT**2)/(m*(2+deltaT*d)))*ydiff + ((2*deltaT**2)/(m*(2+deltaT*d)))*(Pb-Pin)
+    yNext = ((4 - (2*k*deltaT**2)/m)/(2+deltaT*d))*y + ((deltaT*d - 2)/(2 + deltaT*d))*yPrev - ((2*kc*deltaT**2)/(m*(2+deltaT*d)))*ydiff + ((2*deltaT**2)/(m*(2+deltaT*d)))*(Pb-Pin)
         
     
     
@@ -162,7 +161,7 @@ for n in range(dur):
     PsiNext[N-1] = num/den 
     # PsiNext[N-1] = Psi[N-1]
 
-    # drawnow(draw_fig)
+    drawnow(draw_fig)
     
     # out[n] = PsiNext[N-1]
     

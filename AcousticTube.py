@@ -93,9 +93,6 @@ f0 = 200
 
 
 
-
-
-maximus = 0
 #%% Flow input  
 
     
@@ -127,14 +124,14 @@ if EXCITER==0:
         den = 1 + h*((a1/k) + a2)*(lambdaSq*S[N-1]/avgS[N-1]) 
         PsiNext[N-1] = num/den 
         
-        # ##Plot the flow in the tube
-        # i = 0
-        # for i in range(N-1):
-        #     flowVec[i] = (Psi[i+1].copy() - Psi[i].copy())/(h)
+        ##Plot the flow in the tube
+        i = 0
+        for i in range(N-1):
+            flowVec[i] = (Psi[i+1].copy() - Psi[i].copy())/(h)
             
-        # flowVec[N-1] = (Psi[N-1].copy() - Psi[N-2].copy())/(h)
+        flowVec[N-1] = (Psi[N-1].copy() - Psi[N-2].copy())/(h)
             
-        # drawnow(draw_fig)
+        drawnow(draw_fig)
         
         
         # out[n] = PsiNext[N-1]
@@ -182,7 +179,7 @@ if EXCITER==1:
         for i in range(N):
             pressureVec[i] = (PsiNext[i] - PsiPrev[i])/(2*k)
              
-        # drawnow(draw_fig)
+        drawnow(draw_fig)
         
         
         # out[n] = PsiNext[N-1]

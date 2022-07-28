@@ -21,7 +21,7 @@ get_ipython().run_line_magic('matplotlib', 'qt')
 import scipy.fftpack
 import mplcursors as mpc
 set_matplotlib_formats('svg')
-
+import time
 
 # %matplotlib qt  # makes plots in a separate window
 plt.close('all')
@@ -45,7 +45,7 @@ lambdaSq = c**2 * deltaT**2 / deltaX**2  # courant number squared
 # lambda = gamma * deltaT /deltaX
 Pm = 3637.0   # pressure at the mouthpiece
 yeq = 4.09e-04  # reed equilibrium position
-yc = 0.6*yeq
+yc = 0.6*4e-04
 
 A = 9.856e-05   # Effective reed surface
 d = 3000        # Damping per unit area
@@ -56,7 +56,7 @@ k = 1766.1952       # Reed stiffness
 kc = 1971200.0      # Impact stiffness constant
 m = 0.0003 #3.2721920000000004e-06        # Reed mass
 alpha = 2       # Impact exponent
-
+outPos = 0 
 #%% Intialise states of the system
 
 PsiNext = np.zeros(N)
@@ -72,6 +72,7 @@ out = np.zeros(dur)
 
 
 #%% Tube shape function 
+
 rleft = 0.0001
 S0 = pi*rleft**2       # surface area (left end)
 
@@ -110,45 +111,47 @@ avgS[N-1] = S[N-1]  # just made them to work, its not correct though
 #%%
 # radiation variables a1 and a2
 a1 = 1/(2*(0.8216**2) * gamma)  # page 253 bilbao
-a2 = L/(0.8216 * math.sqrt(avgS[0]*S[0]/math.pi))
+a2 = L/(0.8216 * math.sqrt((sum(S)/len(S))*S[1]/math.pi))
 
 Pin = 0
 
 
 def draw_fig():
-    plt.ylim(-0.5, 0.5)
+    plt.ylim(-2, 2)
     plt.plot(PsiNext)
 
 
-# %% Reed model input
+# %% Reed model 2017
 print("reed model 2017")
 
 gammaArray = np.zeros(dur)
 n = 0
+t0 = time.time()
 # Loop for flow input
 for n in range(dur):
     l = 1
     for l in range(N-1):
-        PsiNext[l] = 2*(1-lambdaSq)*Psi[l] - PsiPrev[l] + \
-            lambdaSq * (S[l+1]/avgS[l]) * Psi[l+1] + \
-            lambdaSq * (S[l]/avgS[l]) * Psi[l-1]
+        PsiNext[l] = 2*(1-lambdaSq)*Psi[l] - PsiPrev[l] + lambdaSq * (S[l+1]/avgS[l]) * Psi[l+1] + lambdaSq * (S[l]/avgS[l]) * Psi[l-1]
 
     # calculate update for reed mass spring (yNext)
     if y > yc:
         ydiff = (y - yc)**alpha
     else:
         ydiff = 0
+    # ydiff = (0.5+0.5*math.tanh(10e10*(y - yc)))*((y - yc)**alpha)
+    yNext = ((4*m - 2*(deltaT**2)*k)*y + (deltaT*m*d - 2*m + deltaT*kc*df*ydiff)*yPrev - 2 * (deltaT**2)*kc*ydiff + 2*(Pm-Pin)*A*deltaT**2)/(2*m + deltaT*m*d + deltaT*kc*df*ydiff)
 
-    yNext = ((4*m - 2*(deltaT**2)*k)*y + (deltaT*m*d - 2*m + deltaT*kc*df*ydiff)*yPrev - 2 *
-             (deltaT**2)*kc*ydiff + 2*(Pm-Pin)*A*deltaT**2)/(2*m + deltaT*m*d + deltaT*kc*df*ydiff)
-
-    
+    # t0 = time.time()
     if yeq > y:
         h = yeq - y
     else:
         h = 0
-
-    Ur = A * ((y - yPrev)/deltaT)
+    # t1 = time.time()
+    # t2 = time.time()
+    # h = (0.5+0.5*math.tanh(10e10*(yeq-y)))*(yeq-y)
+    # t3 = time.time()
+    # t3-t2 - (t1-t0)
+    Ur = A * ((yNext - yPrev)/(2*deltaT))
     Gamma = (((b*h)**2)/deltaT) * (((2*deltaX) / S[0])*Ur + 4*PsiNext[1] - PsiNext[2] - 4*Psi[0] + PsiPrev[0]) - ((2*(b*h)**2)/rho) * Pm
     Lambda = ((b*h)**2 * deltaX)/(deltaT * S[0])
     gammaArray[n] = Gamma
@@ -161,17 +164,17 @@ for n in range(dur):
 
     # Calculate the radiating boundary
     num = 2*(1-lambdaSq)*Psi[N-1] - PsiPrev[N-1] + (deltaX*((a1/deltaT) - a2) * (lambdaSq*S[N-1])/avgS[N-1])*PsiPrev[N-1] + 2*lambdaSq*Psi[N-2]
-    den = 1 + deltaX*((a1/deltaT) + a2)*(lambdaSq*S[N-1]/avgS[N-1])
+    den = 1. + deltaX*((a1/deltaT) + a2)*(lambdaSq*S[N-1]/avgS[N-1])
     PsiNext[N-1] = num/den
     # PsiNext[N-1] = Psi[N-1]
 
-
+    # drawnow(draw_fig)  # draws PsiNext
 
     Pin = rho*((3*PsiNext[0] - 4*Psi[0] + PsiPrev[0])/(2*deltaT))
 
-    out[n] = Pin
+    out[n] = rho*((3*PsiNext[outPos] - 4*Psi[outPos] + PsiPrev[outPos])/(2*deltaT))
 
-    # drawnow(draw_fig)  # draws PsiNext
+    
 
     yPrev = y
     y = yNext
@@ -180,7 +183,7 @@ for n in range(dur):
     Psi = PsiNext.copy()
 
 # %% Plot
-
+t1 = time.time()
 plt.figure(2)
 plt.plot(out)
 
