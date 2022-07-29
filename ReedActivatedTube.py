@@ -37,7 +37,7 @@ gamma = c/L             # scaling
 durration = 1.           # synthesised sound lenght in s
 dur = int(math.floor(fs*durration))
 
-N = int(math.floor(1/deltaX))
+N = int(math.floor(1/(deltaX)))
 deltaX = 1.0/N 
 lambdaSq = c**2 * deltaT**2 / deltaX**2  #sanity check
 # lambda = gamma * deltaT /deltaX 
@@ -53,15 +53,17 @@ y = 0.0
 yPrev = 0.0
 
 Pb=2000.0
+Pm = Pb
 ym = 4e-04
 yc = 0.6*ym
-d = 3000  # Damping
-A = 7.62e-05
+sigma = 3000  # Damping
+sigmaF = 0*1.
+A = 9.856e-05 
 b = 0.013 
 k = 8.66e06
 kc = 1e10
 m = 0.05
-alpha = 2
+alpha = 3
 # initialise output
 out = np.zeros(dur) 
 
@@ -103,7 +105,7 @@ for i in range(N-1):
 avgS[0] = S[0] # just made them to work, its not correct though
 avgS[N-1] = S[N-1] # just made them to work, its not correct though
 
-a1 = 1/(2*(0.8216**2) * gamma)  # page 253 bilbao
+a1 = 1/(2*(0.8216**2) * c)  # page 253 bilbao
 a2 = L/(0.8216 * math.sqrt(avgS[0]*S[0]/math.pi))
 
 Pin = 0
@@ -136,8 +138,9 @@ for n in range(dur):
     else:
         ydiff = 0
         
-    yNext = ((4 - (2*k*deltaT**2)/m)/(2+deltaT*d))*y + ((deltaT*d - 2)/(2 + deltaT*d))*yPrev - ((2*kc*deltaT**2)/(m*(2+deltaT*d)))*ydiff + ((2*deltaT**2)/(m*(2+deltaT*d)))*(Pb-Pin)
-        
+    yNext = ((4 - (2*k*deltaT**2)/m)/(2+deltaT*sigma))*y + ((deltaT*sigma - 2)/(2 + deltaT*sigma))*yPrev - ((2*kc*deltaT**2)/(m*(2+deltaT*sigma)))*ydiff + ((2*deltaT**2)/(m*(2+deltaT*sigma)))*(Pb-Pin)
+    # numerator = (4*m - 2*k*(deltaT**2))*y + (deltaT*m*sigma - 2*m + deltaT*kc*sigmaF*ydiff)*yPrev + 2*(Pm-Pin)*deltaT**2 - 2*(deltaT**2)*kc*ydiff
+    # yNext = numerator/(m * (2+deltaT*sigma)+ kc*sigmaF*deltaT*ydiff)
     
     
     
@@ -161,7 +164,7 @@ for n in range(dur):
     PsiNext[N-1] = num/den 
     # PsiNext[N-1] = Psi[N-1]
 
-    drawnow(draw_fig)
+    # drawnow(draw_fig)
     
     # out[n] = PsiNext[N-1]
     

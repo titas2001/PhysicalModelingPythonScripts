@@ -19,15 +19,15 @@ from IPython import get_ipython  # same as clear in matlab
 get_ipython().magic('reset -sf')  # same as clear in matlab
 get_ipython().run_line_magic('matplotlib', 'qt')
 import scipy.fftpack
-import mplcursors as mpc
-set_matplotlib_formats('svg')
-import time
+# import mplcursors as mpc
+# set_matplotlib_formats('svg')
+# import time
 
 # %matplotlib qt  # makes plots in a separate window
 plt.close('all')
 
 # %%  Definitions
-durration = 1.         # synthesised sound lenght in s
+duration = 10.         # synthesised sound lenght in s
 fs = 44100.             # sample rate
 deltaT = 1./fs          # calculate time step size
 B = 142000.             # bulk modulus of the air
@@ -37,7 +37,7 @@ deltaX = c*deltaT       # calculate grid spacing
 L = 0.4126              # lenght of a resonating tube in meters
 gamma = c/L             # scaling
 
-dur = int(math.floor(fs*durration)) # simulation duration in samples
+dur = int(math.floor(fs*duration)) # simulation duration in samples
 
 N = int(math.floor(1/deltaX))       # lenght of a resonating tube in samples
 deltaX = 1.0/N                      # calculate grid spacing
@@ -45,16 +45,16 @@ lambdaSq = c**2 * deltaT**2 / deltaX**2  # courant number squared
 # lambda = gamma * deltaT /deltaX
 Pm = 3637.0   # pressure at the mouthpiece
 yeq = 4.09e-04  # reed equilibrium position
-yc = 0.6*4e-04
+yc = 0.6*yeq
 
 A = 9.856e-05   # Effective reed surface
-d = 3000        # Damping per unit area
-df = 1          # Impact Damping
+sigma = 3000        # Damping per unit area
+sigmaF = 1.          # Impact Damping
 
 b = 0.012           # Effective reed width
 k = 1766.1952       # Reed stiffness
 kc = 1971200.0      # Impact stiffness constant
-m = 0.0003 #3.2721920000000004e-06        # Reed mass
+m = 0.03e-03        # Reed mass
 alpha = 2       # Impact exponent
 outPos = 0 
 #%% Intialise states of the system
@@ -110,7 +110,7 @@ avgS[N-1] = S[N-1]  # just made them to work, its not correct though
 
 #%%
 # radiation variables a1 and a2
-a1 = 1/(2*(0.8216**2) * gamma)  # page 253 bilbao
+a1 = 1/(2*(0.8216**2) * c)  # page 253 bilbao
 a2 = L/(0.8216 * math.sqrt((sum(S)/len(S))*S[1]/math.pi))
 
 Pin = 0
@@ -126,7 +126,7 @@ print("reed model 2017")
 
 gammaArray = np.zeros(dur)
 n = 0
-t0 = time.time()
+
 # Loop for flow input
 for n in range(dur):
     l = 1
@@ -139,18 +139,16 @@ for n in range(dur):
     else:
         ydiff = 0
     # ydiff = (0.5+0.5*math.tanh(10e10*(y - yc)))*((y - yc)**alpha)
-    yNext = ((4*m - 2*(deltaT**2)*k)*y + (deltaT*m*d - 2*m + deltaT*kc*df*ydiff)*yPrev - 2 * (deltaT**2)*kc*ydiff + 2*(Pm-Pin)*A*deltaT**2)/(2*m + deltaT*m*d + deltaT*kc*df*ydiff)
+    
+    numerator = (4*m - 2*k*(deltaT**2))*y + (deltaT*m*sigma - 2*m + deltaT*kc*sigmaF*ydiff)*yPrev + 2*A*(Pm-Pin)*deltaT**2 - 2*(deltaT**2)*kc*ydiff
+    yNext = numerator/(m * (2+deltaT*sigma)+ kc*sigmaF*deltaT*ydiff)
+    # yNext = ((4 - (2*k*deltaT**2)/m)/(2+deltaT*sigma))*y + ((deltaT*sigma - 2)/(2 + deltaT*sigma))*yPrev - ((2*kc*deltaT**2)/(m*(2+deltaT*sigma)))*ydiff + ((2*deltaT**2)/(m*(2+deltaT*sigma)))*(Pm-Pin)
 
-    # t0 = time.time()
-    if yeq > y:
-        h = yeq - y
-    else:
-        h = 0
-    # t1 = time.time()
-    # t2 = time.time()
-    # h = (0.5+0.5*math.tanh(10e10*(yeq-y)))*(yeq-y)
-    # t3 = time.time()
-    # t3-t2 - (t1-t0)
+    # if yeq > y:
+    #     h = yeq - y
+    # else:
+    #     h = 0
+    h = yeq - y
     Ur = A * ((yNext - yPrev)/(2*deltaT))
     Gamma = (((b*h)**2)/deltaT) * (((2*deltaX) / S[0])*Ur + 4*PsiNext[1] - PsiNext[2] - 4*Psi[0] + PsiPrev[0]) - ((2*(b*h)**2)/rho) * Pm
     Lambda = ((b*h)**2 * deltaX)/(deltaT * S[0])
@@ -183,15 +181,17 @@ for n in range(dur):
     Psi = PsiNext.copy()
 
 # %% Plot
-t1 = time.time()
+
 plt.figure(2)
 plt.plot(out)
+
 
 yf = scipy.fftpack.fft(out)
 xf = np.linspace(0.0, 1.0/(2.0*deltaT), dur//2)
 fig, ax = plt.subplots()
+ax.set_yscale("log", nonpositive='clip')
 ax.plot(xf, 2.0/dur * np.abs(yf[:dur//2]))
-mpc.cursor()
+# mpc.cursor()
 
 # %% Save array as an audio file
 
