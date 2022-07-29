@@ -27,7 +27,7 @@ import scipy.fftpack
 plt.close('all')
 
 # %%  Definitions
-duration = 10.         # synthesised sound lenght in s
+duration = 1.         # synthesised sound lenght in s
 fs = 44100.             # sample rate
 deltaT = 1./fs          # calculate time step size
 B = 142000.             # bulk modulus of the air
@@ -125,6 +125,7 @@ def draw_fig():
 print("reed model 2017")
 
 gammaArray = np.zeros(dur)
+hIsZero = np.zeros(dur)
 n = 0
 
 # Loop for flow input
@@ -148,6 +149,8 @@ for n in range(dur):
     #     h = yeq - y
     # else:
     #     h = 0
+    #     hIsZero[n] = 1
+        
     h = yeq - y
     Ur = A * ((yNext - yPrev)/(2*deltaT))
     Gamma = (((b*h)**2)/deltaT) * (((2*deltaX) / S[0])*Ur + 4*PsiNext[1] - PsiNext[2] - 4*Psi[0] + PsiPrev[0]) - ((2*(b*h)**2)/rho) * Pm
